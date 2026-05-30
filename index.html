@@ -31,7 +31,11 @@ h1{font-family:var(--font-mono);font-size:clamp(22px,4vw,36px);font-weight:700;l
 .section{display:none;}.section.active{display:block;}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
 .section-title{font-family:var(--font-mono);font-size:13px;letter-spacing:0.12em;text-transform:uppercase;}
-.refresh-btn{background:none;border:1px solid var(--border);color:var(--text-muted);padding:6px 14px;font-family:var(--font-mono);font-size:10px;cursor:pointer;border-radius:4px;transition:all 0.2s;}
+.btn-row{display:flex;gap:8px;}
+.refresh-btn,.summarize-btn{background:none;border:1px solid var(--border);color:var(--text-muted);padding:6px 14px;font-family:var(--font-mono);font-size:10px;cursor:pointer;border-radius:4px;transition:all 0.2s;}
+.refresh-btn:hover{border-color:#555;color:var(--text);}
+.summarize-btn{border-color:var(--accent-ai);color:var(--accent-ai);}
+.summarize-btn:hover{background:var(--accent-ai);color:#000;}
 .refresh-btn.loading{opacity:0.5;pointer-events:none;}
 .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
 .news-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;transition:border-color 0.2s,transform 0.2s;text-decoration:none;color:inherit;display:block;animation:fadeIn 0.4s ease both;}
@@ -51,6 +55,8 @@ h1{font-family:var(--font-mono);font-size:clamp(22px,4vw,36px);font-weight:700;l
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-stock);animation:blink 2s infinite;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 footer{margin-top:60px;padding:24px 0;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--accent-ai);color:#000;padding:14px 24px;border-radius:8px;font-family:var(--font-mono);font-size:13px;font-weight:700;z-index:100;transition:transform 0.3s;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+#toast.show{transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -62,21 +68,24 @@ footer{margin-top:60px;padding:24px 0;border-top:1px solid var(--border);font-fa
 <button class="tab-btn" data-tab="tech"><span class="dot"></span>Tech</button>
 <button class="tab-btn" data-tab="ai"><span class="dot"></span>AI · DE · DS · DA</button>
 </div>
-<div class="section active" id="section-stock"><div class="section-header"><span class="section-title" style="color:var(--accent-stock)">📈 ข่าวหุ้น &amp; การเงิน</span><button class="refresh-btn" onclick="loadSection('stock',true)">↻ refresh</button></div><div class="news-grid" id="grid-stock"></div></div>
-<div class="section" id="section-tech"><div class="section-header"><span class="section-title" style="color:var(--accent-tech)">💻 Tech News</span><button class="refresh-btn" onclick="loadSection('tech',true)">↻ refresh</button></div><div class="news-grid" id="grid-tech"></div></div>
-<div class="section" id="section-ai"><div class="section-header"><span class="section-title" style="color:var(--accent-ai)">🤖 AI · DE · DS · DA</span><button class="refresh-btn" onclick="loadSection('ai',true)">↻ refresh</button></div><div class="news-grid" id="grid-ai"></div></div>
-<footer>DAILY DIGEST — RSS via rss2json · ฟรี 100% · ไม่มี backend</footer>
+<div class="section active" id="section-stock"><div class="section-header"><span class="section-title" style="color:var(--accent-stock)">📈 ข่าวหุ้น &amp; การเงิน</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('stock')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('stock',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-stock"></div></div>
+<div class="section" id="section-tech"><div class="section-header"><span class="section-title" style="color:var(--accent-tech)">💻 Tech News</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('tech')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('tech',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-tech"></div></div>
+<div class="section" id="section-ai"><div class="section-header"><span class="section-title" style="color:var(--accent-ai)">🤖 AI · DE · DS · DA</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('ai')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('ai',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-ai"></div></div>
+<footer>DAILY DIGEST — RSS via rss2json · ฟรี 100% · คัดลอก prompt ไปวางใน Claude ได้เลย</footer>
 </div>
+<div id="toast"></div>
 <script>
 var PROXY='https://api.rss2json.com/v1/api.json?rss_url=';
+var LABELS={stock:'ข่าวหุ้นและการเงิน',tech:'ข่าวเทคโนโลยี',ai:'ข่าว AI / Data Engineering / Data Science / Data Analytics'};
 var SOURCES={
 stock:[{name:'Yahoo Finance',url:'https://finance.yahoo.com/news/rssindex',accent:'#00ff88'},{name:'WSJ Markets',url:'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',accent:'#00cc66'}],
 tech:[{name:'TechCrunch',url:'https://techcrunch.com/feed/',accent:'#00aaff'},{name:'The Verge',url:'https://www.theverge.com/rss/index.xml',accent:'#0088dd'},{name:'Wired',url:'https://www.wired.com/feed/rss',accent:'#0066bb'}],
 ai:[{name:'MIT Tech Review',url:'https://www.technologyreview.com/feed/',accent:'#aa55ff'},{name:'KDnuggets',url:'https://www.kdnuggets.com/feed',accent:'#cc77ff'},{name:'AI News',url:'https://www.artificialintelligence-news.com/feed/',accent:'#8833ee'}]
 };
+var DATA={stock:[],tech:[],ai:[]};
 function sk(n){n=n||6;var a=[];for(var i=0;i<n;i++){a.push('<div class="skeleton-card"><div class="skeleton-line" style="height:10px;width:40%;margin-bottom:14px"></div><div class="skeleton-line" style="height:16px;width:90%"></div><div class="skeleton-line" style="height:16px;width:72%"></div></div>');}return a.join('');}
 function ago(d){if(!d)return'';var m=Math.floor((Date.now()-new Date(d))/60000);if(m<1)return'เมื่อกี้';if(m<60)return m+' นาทีที่แล้ว';var h=Math.floor(m/60);if(h<24)return h+' ชม.ที่แล้ว';return Math.floor(h/24)+' วันที่แล้ว';}
-function ff(s){return fetch(PROXY+encodeURIComponent(s.url)).then(function(r){return r.json();}).then(function(j){if(j.status!=='ok')return[];return (j.items||[]).slice(0,10).map(function(i){return {title:i.title,link:i.link,desc:(i.description||'').replace(/<[^>]*>/g,'').trim().slice(0,140),date:i.pubDate,source:s.name,accent:s.accent};});});}
+function ff(s){return fetch(PROXY+encodeURIComponent(s.url)).then(function(r){return r.json();}).then(function(j){if(j.status!=='ok')return[];return (j.items||[]).slice(0,10).map(function(i){return {title:i.title,link:i.link,desc:(i.description||'').replace(/<[^>]*>/g,'').trim().slice(0,180),date:i.pubDate,source:s.name,accent:s.accent};});});}
 var loaded={};
 function loadSection(tab,force){
 if(loaded[tab]&&!force)return;
@@ -85,6 +94,7 @@ var b=document.querySelector('#section-'+tab+' .refresh-btn');if(b)b.classList.a
 Promise.allSettled(SOURCES[tab].map(ff)).then(function(res){
 var items=[];res.forEach(function(r){if(r.status==='fulfilled')items=items.concat(r.value);});
 items=items.filter(function(i){return i.title;}).sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,24);
+DATA[tab]=items;
 if(!items.length){g.innerHTML='<div class="error-box">⚠ โหลดข่าวไม่ได้ตอนนี้<br>รอ 1 นาทีแล้วกด refresh</div>';}
 else{g.innerHTML=items.map(function(i,n){return '<a class="news-card" href="'+i.link+'" target="_blank" rel="noopener" style="animation-delay:'+(n*0.04)+'s"><div class="card-source"><span class="card-accent-bar" style="background:'+i.accent+'"></span>'+i.source+'</div><div class="card-title">'+i.title+'</div>'+(i.desc?'<div class="card-desc">'+i.desc+'…</div>':'')+'<div class="card-footer"><span>'+ago(i.date)+'</span><span>อ่านต่อ →</span></div></a>';}).join('');
 loaded[tab]=true;
@@ -93,6 +103,15 @@ document.getElementById('total-count').textContent=items.length+' ข่าว';
 if(b)b.classList.remove('loading');
 });
 }
+function copyPrompt(tab){
+var items=DATA[tab];
+if(!items||!items.length){showToast('ยังไม่มีข่าว ลอง refresh ก่อน');return;}
+var p='ช่วยสรุป'+LABELS[tab]+'ต่อไปนี้ให้หน่อย โดยจัดกลุ่มตามธีม และไฮไลต์ประเด็นสำคัญที่ควรรู้ เป็นภาษาไทย:\n\n';
+items.forEach(function(i,n){p+=(n+1)+'. ['+i.source+'] '+i.title+'\n';if(i.desc)p+='   '+i.desc+'\n';p+='   '+i.link+'\n\n';});
+navigator.clipboard.writeText(p).then(function(){showToast('✓ คัดลอกแล้ว! วางในแชท Claude ได้เลย ('+items.length+' ข่าว)');}).catch(function(){showToast('คัดลอกไม่สำเร็จ');});
+}
+var toastTimer;
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},3500);}
 document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){var t=b.dataset.tab;document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.section').forEach(function(x){x.classList.remove('active');});b.classList.add('active');document.getElementById('section-'+t).classList.add('active');loadSection(t);});});
 function clock(){var n=new Date();document.getElementById('live-time').textContent=n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('live-date').textContent=n.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
 setInterval(clock,1000);clock();loadSection('stock');
