@@ -73,12 +73,12 @@ footer{margin-top:60px;padding:24px 0;border-top:1px solid var(--border);font-fa
 <div class="tabs">
 <button class="tab-btn active" data-tab="stock"><span class="dot"></span>หุ้น &amp; การเงิน</button>
 <button class="tab-btn" data-tab="tech"><span class="dot"></span>Tech</button>
-<button class="tab-btn" data-tab="ai"><span class="dot"></span>AI · DE · DS · DA</button>
+<button class="tab-btn" data-tab="ai"><span class="dot"></span>งานสาย AI / DE / DS / DA</button>
 </div>
 <div class="filter-row"><div class="toggle on" id="fresh-toggle" onclick="toggleFresh()"><div class="knob"></div></div><span id="fresh-label">เฉพาะข่าวใน 24 ชม. (เปิดอยู่)</span></div>
 <div class="section active" id="section-stock"><div class="section-header"><span class="section-title" style="color:var(--accent-stock)">📈 ข่าวหุ้น &amp; การเงิน</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('stock')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('stock',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-stock"></div></div>
 <div class="section" id="section-tech"><div class="section-header"><span class="section-title" style="color:var(--accent-tech)">💻 Tech News</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('tech')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('tech',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-tech"></div></div>
-<div class="section" id="section-ai"><div class="section-header"><span class="section-title" style="color:var(--accent-ai)">🤖 AI · DE · DS · DA</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('ai')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('ai',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-ai"></div></div>
+<div class="section" id="section-ai"><div class="section-header"><span class="section-title" style="color:var(--accent-ai)">🤖 งานสาย AI · DE · DS · DA</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('ai')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('ai',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-ai"></div></div>
 <footer>DAILY DIGEST — RSS via rss2json · ฟรี 100% · กรองข่าวใน 24 ชม. · คัดลอก prompt ไปวางใน Claude</footer>
 </div>
 <div id="toast"></div>
@@ -86,11 +86,11 @@ footer{margin-top:60px;padding:24px 0;border-top:1px solid var(--border);font-fa
 var PROXY='https://api.rss2json.com/v1/api.json?rss_url=';
 var DAY=24*60*60*1000;
 var freshOnly=true;
-var LABELS={stock:'ข่าวหุ้นและการเงิน',tech:'ข่าวเทคโนโลยี',ai:'ข่าว AI / Data Engineering / Data Science / Data Analytics'};
+var LABELS={stock:'ข่าวหุ้นและการเงิน',tech:'ข่าวเทคโนโลยี',ai:'เนื้อหาสายงาน AI / Data Engineering / Data Science / Data Analytics (เครื่องมือใหม่ เทคนิค tutorial โมเดล framework best practice)'};
 var SOURCES={
 stock:[{name:'Yahoo Finance',url:'https://finance.yahoo.com/news/rssindex',accent:'#00ff88'},{name:'WSJ Markets',url:'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',accent:'#00cc66'}],
 tech:[{name:'TechCrunch',url:'https://techcrunch.com/feed/',accent:'#00aaff'},{name:'The Verge',url:'https://www.theverge.com/rss/index.xml',accent:'#0088dd'},{name:'Wired',url:'https://www.wired.com/feed/rss',accent:'#0066bb'}],
-ai:[{name:'MIT Tech Review',url:'https://www.technologyreview.com/feed/',accent:'#aa55ff'},{name:'KDnuggets',url:'https://www.kdnuggets.com/feed',accent:'#cc77ff'},{name:'AI News',url:'https://www.artificialintelligence-news.com/feed/',accent:'#8833ee'}]
+ai:[{name:'Towards Data Science',url:'https://towardsdatascience.com/feed',accent:'#aa55ff'},{name:'KDnuggets',url:'https://www.kdnuggets.com/feed',accent:'#cc77ff'},{name:'ML Mastery',url:'https://machinelearningmastery.com/feed/',accent:'#9944ee'},{name:'Hugging Face',url:'https://huggingface.co/blog/feed.xml',accent:'#bb66ff'}]
 };
 var RAW={stock:[],tech:[],ai:[]};
 function isFresh(d){if(!d)return false;return (Date.now()-new Date(d).getTime())<DAY;}
