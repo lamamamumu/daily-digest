@@ -73,38 +73,40 @@ footer{margin-top:60px;padding:24px 0;border-top:1px solid var(--border);font-fa
 <div class="tabs">
 <button class="tab-btn active" data-tab="stock"><span class="dot"></span>หุ้น &amp; การเงิน</button>
 <button class="tab-btn" data-tab="tech"><span class="dot"></span>Tech</button>
-<button class="tab-btn" data-tab="ai"><span class="dot"></span>งานสาย AI / DE / DS / DA</button>
+<button class="tab-btn" data-tab="ai"><span class="dot"></span>AI · DE · DS · DA</button>
 </div>
-<div class="filter-row"><div class="toggle on" id="fresh-toggle" onclick="toggleFresh()"><div class="knob"></div></div><span id="fresh-label">เฉพาะข่าวใน 24 ชม. (เปิดอยู่)</span></div>
+<div class="filter-row"><div class="toggle on" id="fresh-toggle" onclick="toggleFresh()"><div class="knob"></div></div><span id="fresh-label"></span></div>
 <div class="section active" id="section-stock"><div class="section-header"><span class="section-title" style="color:var(--accent-stock)">📈 ข่าวหุ้น &amp; การเงิน</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('stock')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('stock',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-stock"></div></div>
 <div class="section" id="section-tech"><div class="section-header"><span class="section-title" style="color:var(--accent-tech)">💻 Tech News</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('tech')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('tech',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-tech"></div></div>
-<div class="section" id="section-ai"><div class="section-header"><span class="section-title" style="color:var(--accent-ai)">🤖 งานสาย AI · DE · DS · DA</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('ai')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('ai',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-ai"></div></div>
-<footer>DAILY DIGEST — RSS via rss2json · ฟรี 100% · กรองข่าวใน 24 ชม. · คัดลอก prompt ไปวางใน Claude</footer>
+<div class="section" id="section-ai"><div class="section-header"><span class="section-title" style="color:var(--accent-ai)">🤖 AI · DE · DS · DA (สายงาน)</span><div class="btn-row"><button class="summarize-btn" onclick="copyPrompt('ai')">📋 คัดลอก prompt สรุป</button><button class="refresh-btn" onclick="loadSection('ai',true)">↻ refresh</button></div></div><div class="news-grid" id="grid-ai"></div></div>
+<footer>DAILY DIGEST — RSS via rss2json · ฟรี 100% · เปิด=24ชม. / ปิด=7วัน · คัดลอก prompt ไป Claude</footer>
 </div>
 <div id="toast"></div>
 <script>
 var PROXY='https://api.rss2json.com/v1/api.json?rss_url=';
-var DAY=24*60*60*1000;
+var DAY=24*60*60*1000;var WEEK=7*DAY;
 var freshOnly=true;
-var LABELS={stock:'ข่าวหุ้นและการเงิน',tech:'ข่าวเทคโนโลยี',ai:'เนื้อหาสายงาน AI / Data Engineering / Data Science / Data Analytics (เครื่องมือใหม่ เทคนิค tutorial โมเดล framework best practice)'};
+var LABELS={stock:'ข่าวหุ้นและการเงิน',tech:'ข่าวเทคโนโลยี',ai:'เนื้อหาสายงาน AI / Data Engineering / Data Science / Data Analytics (เครื่องมือใหม่ เทคนิค tutorial framework)'};
 var SOURCES={
 stock:[{name:'Yahoo Finance',url:'https://finance.yahoo.com/news/rssindex',accent:'#00ff88'},{name:'WSJ Markets',url:'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',accent:'#00cc66'}],
 tech:[{name:'TechCrunch',url:'https://techcrunch.com/feed/',accent:'#00aaff'},{name:'The Verge',url:'https://www.theverge.com/rss/index.xml',accent:'#0088dd'},{name:'Wired',url:'https://www.wired.com/feed/rss',accent:'#0066bb'}],
-ai:[{name:'Towards Data Science',url:'https://towardsdatascience.com/feed',accent:'#aa55ff'},{name:'KDnuggets',url:'https://www.kdnuggets.com/feed',accent:'#cc77ff'},{name:'ML Mastery',url:'https://machinelearningmastery.com/feed/',accent:'#9944ee'},{name:'Hugging Face',url:'https://huggingface.co/blog/feed.xml',accent:'#bb66ff'}]
+ai:[{name:'Towards Data Science',url:'https://towardsdatascience.com/feed',accent:'#aa55ff'},{name:'KDnuggets',url:'https://www.kdnuggets.com/feed',accent:'#cc77ff'},{name:'Real Python',url:'https://realpython.com/atom.xml',accent:'#9966ff'},{name:'Hugging Face',url:'https://huggingface.co/blog/feed.xml',accent:'#bb88ff'},{name:'Google AI',url:'https://blog.google/technology/ai/rss/',accent:'#7744dd'},{name:'ML Mastery',url:'https://machinelearningmastery.com/feed/',accent:'#cc99ff'}]
 };
 var RAW={stock:[],tech:[],ai:[]};
+function windowMs(){return freshOnly?DAY:WEEK;}
+function within(d){if(!d)return false;return (Date.now()-new Date(d).getTime())<windowMs();}
 function isFresh(d){if(!d)return false;return (Date.now()-new Date(d).getTime())<DAY;}
-function visible(tab){var all=RAW[tab]||[];return freshOnly?all.filter(function(i){return isFresh(i.date);}):all;}
+function visible(tab){var all=RAW[tab]||[];return all.filter(function(i){return within(i.date);});}
 function sk(n){n=n||6;var a=[];for(var i=0;i<n;i++){a.push('<div class="skeleton-card"><div class="skeleton-line" style="height:10px;width:40%;margin-bottom:14px"></div><div class="skeleton-line" style="height:16px;width:90%"></div><div class="skeleton-line" style="height:16px;width:72%"></div></div>');}return a.join('');}
 function ago(d){if(!d)return'';var m=Math.floor((Date.now()-new Date(d))/60000);if(m<1)return'เมื่อกี้';if(m<60)return m+' นาทีที่แล้ว';var h=Math.floor(m/60);if(h<24)return h+' ชม.ที่แล้ว';return Math.floor(h/24)+' วันที่แล้ว';}
 function ff(s){return fetch(PROXY+encodeURIComponent(s.url)).then(function(r){return r.json();}).then(function(j){if(j.status!=='ok')return[];return (j.items||[]).slice(0,15).map(function(i){return {title:i.title,link:i.link,desc:(i.description||'').replace(/<[^>]*>/g,'').trim().slice(0,180),date:i.pubDate,source:s.name,accent:s.accent};});});}
 var loaded={};
 function render(tab){
-var g=document.getElementById('grid-'+tab);var items=visible(tab);
+var g=document.getElementById('grid-'+tab);var items=visible(tab);var lbl=freshOnly?'24 ชม.':'7 วัน';
 if(!RAW[tab].length){g.innerHTML='<div class="error-box">⚠ โหลดข่าวไม่ได้<br>รอ 1 นาทีแล้วกด refresh</div>';return;}
-if(!items.length){g.innerHTML='<div class="empty-box">ไม่มีข่าวใหม่ใน 24 ชม.<br>ลองปิดตัวกรองเพื่อดูข่าวทั้งหมด</div>';}
+if(!items.length){g.innerHTML='<div class="empty-box">ไม่มีข่าวใน '+lbl+'<br>ลองปิด toggle เพื่อขยายช่วงเวลา</div>';}
 else{g.innerHTML=items.map(function(i,n){return '<a class="news-card" href="'+i.link+'" target="_blank" rel="noopener" style="animation-delay:'+(n*0.04)+'s"><div class="card-source"><span class="card-accent-bar" style="background:'+i.accent+'"></span>'+i.source+(isFresh(i.date)?'<span class="fresh-tag">● NEW</span>':'')+'</div><div class="card-title">'+i.title+'</div>'+(i.desc?'<div class="card-desc">'+i.desc+'…</div>':'')+'<div class="card-footer"><span>'+ago(i.date)+'</span><span>อ่านต่อ →</span></div></a>';}).join('');}
-document.getElementById('total-count').textContent=items.length+' ข่าว'+(freshOnly?' (24ชม.)':'');
+document.getElementById('total-count').textContent=items.length+' ข่าว ('+lbl+')';
 }
 function loadSection(tab,force){
 if(loaded[tab]&&!force){render(tab);return;}
@@ -119,19 +121,20 @@ render(tab);
 if(b)b.classList.remove('loading');
 });
 }
-function toggleFresh(){freshOnly=!freshOnly;var t=document.getElementById('fresh-toggle');t.classList.toggle('on',freshOnly);document.getElementById('fresh-label').textContent=freshOnly?'เฉพาะข่าวใน 24 ชม. (เปิดอยู่)':'แสดงทั้งหมด (ปิดอยู่)';var active=document.querySelector('.tab-btn.active');if(active)render(active.dataset.tab);}
+function updateLabel(){document.getElementById('fresh-label').textContent=freshOnly?'เฉพาะข่าวใน 24 ชม. (เปิดอยู่) — ปิดเพื่อดูย้อน 7 วัน':'แสดงย้อนหลัง 7 วัน (ปิดอยู่) — เปิดเพื่อเฉพาะ 24 ชม.';}
+function toggleFresh(){freshOnly=!freshOnly;var t=document.getElementById('fresh-toggle');t.classList.toggle('on',freshOnly);updateLabel();var active=document.querySelector('.tab-btn.active');if(active)render(active.dataset.tab);}
 function copyPrompt(tab){
-var items=visible(tab);
-if(!items||!items.length){showToast(freshOnly?'ไม่มีข่าวใหม่ใน 24 ชม.':'ยังไม่มีข่าว ลอง refresh');return;}
-var p='ช่วยสรุป'+LABELS[tab]+'ต่อไปนี้ให้หน่อย เฉพาะข่าวภายใน 24 ชม.ล่าสุดเท่านั้น จัดกลุ่มตามธีม ไฮไลต์ประเด็นสำคัญ เป็นภาษาไทย (ถ้าข่าวไหนดูเก่ากว่า 24 ชม. ข้ามไป):\n\n';
+var items=visible(tab);var lbl=freshOnly?'24 ชม.':'7 วัน';
+if(!items||!items.length){showToast('ไม่มีข่าวใน '+lbl);return;}
+var p='ช่วยสรุป'+LABELS[tab]+' ต่อไปนี้ให้หน่อย เฉพาะข่าวภายใน '+lbl+'ล่าสุด จัดกลุ่มตามธีม ไฮไลต์ประเด็นสำคัญที่เอาไปใช้กับงานได้ เป็นภาษาไทย:\n\n';
 items.forEach(function(i,n){p+=(n+1)+'. ['+i.source+'] '+i.title+'\n';if(i.date)p+='   เวลา: '+ago(i.date)+'\n';if(i.desc)p+='   '+i.desc+'\n';p+='   '+i.link+'\n\n';});
-navigator.clipboard.writeText(p).then(function(){showToast('✓ คัดลอกแล้ว! วางในแชท Claude ('+items.length+' ข่าว 24ชม.)');}).catch(function(){showToast('คัดลอกไม่สำเร็จ');});
+navigator.clipboard.writeText(p).then(function(){showToast('✓ คัดลอกแล้ว! วางในแชท Claude ('+items.length+' ข่าว '+lbl+')');}).catch(function(){showToast('คัดลอกไม่สำเร็จ');});
 }
 var toastTimer;
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},3500);}
 document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){var t=b.dataset.tab;document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.section').forEach(function(x){x.classList.remove('active');});b.classList.add('active');document.getElementById('section-'+t).classList.add('active');loadSection(t);});});
 function clock(){var n=new Date();document.getElementById('live-time').textContent=n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('live-date').textContent=n.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
-setInterval(clock,1000);clock();loadSection('stock');
+setInterval(clock,1000);clock();updateLabel();loadSection('stock');
 </script>
 </body>
 </html>
